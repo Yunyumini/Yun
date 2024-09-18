@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>石头剪刀布大作战</title>
+    <style>
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f0f8ff;
+            min-height: 100vh;
+        }
+        .game-title {
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .game-board {
+            width: 400px;
+            height: 560px;
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            position: absolute;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .red { background-image: url('../icons/1.png'); }
+        .green { background-image: url('../icons/2.png'); }
+        .blue { background-image: url('../icons/3.png'); }
+        .start-button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1.2em;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        .start-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .winner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .winner-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .winner-image {
+            width: 100px;
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        
+        <div id="gameBoard" class="game-board"></div>
+        <button id="startButton" class="start-button">开始游戏</button>
+    </div>
+    <div id="winnerModal" class="winner-modal" style="display: none;">
+        <div class="winner-content">
+            <img id="winnerImage" src="" alt="获胜者" class="winner-image">
+            <p id="winnerMessage"></p>
+            <button id="resetButton">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        const gameBoard = document.getElementById('gameBoard');
+        const startButton = document.getElementById('startButton');
+        const winnerModal = document.getElementById('winnerModal');
+        const winnerImage = document.getElementById('winnerImage');
+        const winnerMessage = document.getElementById('winnerMessage');
+        const resetButton = document.getElementById('resetButton');
+
+        let circles = [];
+        const containerWidth = 400;
+        const containerHeight = 560;
+        const circleSize = 30;
+        let isMoving = false;
+        let intervalId = null;
+        let winner = null;
+
+        function initializeCircles() {
+            const colors = ['red', 'green', 'blue'];
+            circles = [];
+            gameBoard.innerHTML = '';
+            for (let i = 0; i < 36; i++) {
+                let newCircle;
+                do {
+                    newCircle = {
+                        positionX: Math.random() * (containerWidth - circleSize),
+                        positionY: Math.random() * (containerHeight - circleSize),
+                        speedX: (Math.random() - 0.5) * 4,
+                        speedY: (Math.random() - 0.5) * 4,
+                        color: colors[i % 3]
+                    };
+                } while (isOverlapping(newCircle));
+                circles.push(newCircle);
+                const circleElement = document.createElement('div');
+                circleElement.className = `circle ${newCircle.color}`;
+                circleElement.style.transform = `translate(${newCircle.positionX}px, ${newCircle.positionY}px)`;
+                gameBoard.appendChild(circleElement);
+            }
+        }
+
+        function isOverlapping(newCircle) {
+            return circles.some(circle => {
+                const dx = newCircle.positionX - circle.positionX;
+                const dy = newCircle.positionY - circle.positionY;
+                return Math.sqrt(dx * dx + dy * dy) < circleSize;
+            });
+        }
+
+        function startMoving() {
+            if (isMoving) return;
+            isMoving = true;
+            startButton.disabled = true;
+            startButton.textContent = '游戏进行中...';
+            intervalId = setInterval(moveCircles, 16);
+        }
+
+        function moveCircles() {
+            circles.forEach((circle, index) => {
+                circle.positionX += circle.speedX;
+                circle.positionY += circle.speedY;
+
+                if (circle.positionX <= 0) {
+                    circle.positionX = 0;
+                    circle.speedX = Math.abs(circle.speedX);
+                } else if (circle.positionX >= containerWidth - circleSize) {
+                    circle.positionX = containerWidth - circleSize;
+                    circle.speedX = -Math.abs(circle.speedX);
+                }
+                
+                if (circle.positionY <= 0) {
+                    circle.positionY = 0;
+                    circle.speedY = Math.abs(circle.speedY);
+                } else if (circle.positionY >= containerHeight - circleSize) {
+                    circle.positionY = containerHeight - circleSize;
+                    circle.speedY = -Math.abs(circle.speedY);
+                }
+
+                if (Math.random() < 0.02) {
+                    circle.speedX = (Math.random() - 0.5) * 4;
+                    circle.speedY = (Math.random() - 0.5) * 4;
+                }
+
+                checkCollision(circle, index);
+                gameBoard.children[index].style.transform = `translate(${circle.positionX}px, ${circle.positionY}px)`;
+                gameBoard.children[index].className = `circle ${circle.color}`;
+            });
+            checkGameEnd();
+        }
+
+        function checkCollision(circle, index) {
+            for (let i = 0; i < circles.length; i++) {
+                if (i !== index) {
+                    const otherCircle = circles[i];
+                    const dx = circle.positionX - otherCircle.positionX;
+                    const dy = circle.positionY - otherCircle.positionY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < circleSize) {
+                        if (circle.color === 'red' && otherCircle.color === 'blue') {
+                            circle.color = 'blue';
+                        } else if (circle.color === 'green' && otherCircle.color === 'red') {
+                            circle.color = 'red';
+                        } else if (circle.color === 'blue' && otherCircle.color === 'green') {
+                            circle.color = 'green';
+                        }
+
+                        const angle = Math.atan2(dy, dx);
+                        const sin = Math.sin(angle);
+                        const cos = Math.cos(angle);
+
+                        const vx1 = circle.speedX * cos + circle.speedY * sin;
+                        const vy1 = circle.speedY * cos - circle.speedX * sin;
+                        const vx2 = otherCircle.speedX * cos + otherCircle.speedY * sin;
+                        const vy2 = otherCircle.speedY * cos - otherCircle.speedX * sin;
+
+                        circle.speedX = vx2 * cos - vy1 * sin;
+                        circle.speedY = vy1 * cos + vx2 * sin;
+                        otherCircle.speedX = vx1 * cos - vy2 * sin;
+                        otherCircle.speedY = vy2 * cos + vx1 * sin;
+
+                        const overlap = circleSize - distance;
+                        circle.positionX += overlap * cos;
+                        circle.positionY += overlap * sin;
+                        otherCircle.positionX -= overlap * cos;
+                        otherCircle.positionY -= overlap * sin;
+
+                        keepCircleInBounds(circle);
+                        keepCircleInBounds(otherCircle);
+                    }
+                }
+            }
+        }
+
+        function keepCircleInBounds(circle) {
+            if (circle.positionX < 0) circle.positionX = 0;
+            if (circle.positionX > containerWidth - circleSize) circle.positionX = containerWidth - circleSize;
+            if (circle.positionY < 0) circle.positionY = 0;
+            if (circle.positionY > containerHeight - circleSize) circle.positionY = containerHeight - circleSize;
+        }
+
+        function checkGameEnd() {
+            const colors = new Set(circles.map(circle => circle.color));
+            if (colors.size === 1) {
+                winner = colors.values().next().value;
+                const winnerName = getColorName(winner);
+                winnerMessage.textContent = `${winnerName}获胜！`;
+                winnerImage.src = `../icons/${winner}.png`;
+                winnerModal.style.display = 'flex';
+                clearInterval(intervalId);
+                isMoving = false;
+                startButton.disabled = false;
+                startButton.textContent = '开始游戏';
+            }
+        }
+
+        function getColorName(color) {
+            const colorNames = {
+                'red': '石头',
+                'green': '剪刀',
+                'blue': '布'
+            };
+            return colorNames[color];
+        }
+
+        function resetGame() {
+            winner = null;
+            winnerModal.style.display = 'none';
+            initializeCircles();
+        }
+
+        startButton.addEventListener('click', startMoving);
+        resetButton.addEventListener('click', resetGame);
+
+        initializeCircles();
+    </script>
+</body>
+</html>
