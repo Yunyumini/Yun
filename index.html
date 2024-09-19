@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>石头剪刀布大作战</title>
     <style>
+        
         .game-container {
+            width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
-            background-color: #f0f8ff;
             min-height: 100vh;
+            background-image: linear-gradient(to left, #d16ba5, #c777b9, #ba83ca, #aa8fd8, #9a9ae1, #8aa7ec, #79b3f4, #69bff8, #52cffe, #41dfff, #46eefa, #5ffbf1);
         }
         .game-title {
             font-family: 'Arial', sans-serif;
@@ -37,12 +39,9 @@
             background-position: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .red {background: rgb(230,60,60);
-background: linear-gradient(0deg, rgba(230,60,60,1) 0%, rgba(222,204,204,1) 100%, rgba(222,204,204,1) 100%);}
-        .green { background: rgb(28,236,103);
-background: linear-gradient(0deg, rgba(28,236,103,1) 0%, rgba(222,204,204,1) 100%, rgba(222,204,204,1) 100%); }
-        .blue { background: rgb(28,159,236);
-background: linear-gradient(0deg, rgba(28,159,236,1) 0%, rgba(222,204,204,1) 100%, rgba(222,204,204,1) 100%);}
+        .red { background-image: url(icons/1.png)}
+        .green { background-image: url(icons/2.png);}
+        .blue { background-image: url(icons/3.png);}
         .start-button {
             margin-top: 20px;
             padding: 12px 24px;
@@ -56,6 +55,10 @@ background: linear-gradient(0deg, rgba(28,159,236,1) 0%, rgba(222,204,204,1) 100
         .start-button:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
+        }
+        .start-button:hover{
+            transform: scale(1.1);
+            transition: 0.3s;
         }
         .winner-modal {
             position: fixed;
@@ -82,6 +85,7 @@ background: linear-gradient(0deg, rgba(28,159,236,1) 0%, rgba(222,204,204,1) 100
 </head>
 <body>
     <div class="game-container">
+        <h1 style="margin-bottom: 2.5;">石头剪刀布大作战</h1>
         
         <div id="gameBoard" class="game-board"></div>
         <button id="startButton" class="start-button">开始游戏</button>
@@ -238,8 +242,8 @@ background: linear-gradient(0deg, rgba(28,159,236,1) 0%, rgba(222,204,204,1) 100
             if (colors.size === 1) {
                 winner = colors.values().next().value;
                 const winnerName = getColorName(winner);
-                winnerMessage.textContent = `${winnerName}获胜！`;
-                winnerImage.src = `../icons/${winner}.png`;
+                    // Start of Selection
+                    winnerMessage.textContent = `${winnerName}获胜！`;
                 winnerModal.style.display = 'flex';
                 clearInterval(intervalId);
                 isMoving = false;
